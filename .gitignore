@@ -1,0 +1,9 @@
+# IDE
+.idea
+.run
+
+# Data
+/tests/data
+
+# CMake
+CMakeUserPresets.json

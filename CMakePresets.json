@@ -1,0 +1,61 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "full-test",
+      "description": "Build with all dependencies, to test a full build.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GD_BUILD_TESTING": "ON",
+        "GD_BUILD_APPS": "ON"
+      }
+    },
+    {
+      "name": "gh-Linux",
+      "description": "Preset for github actions CI Linux configure",
+      "inherits": "full-test"
+    },
+    {
+      "name": "gh-macOS",
+      "description": "Preset for github actions CI macOS configure",
+      "inherits": "full-test"
+    },
+    {
+      "name": "gh-Windows",
+      "description": "Preset for github actions CI Windows configure",
+      "inherits": "full-test"
+    }
+  ],
+  "buildPresets" : [
+    {
+      "name": "gh-Linux",
+      "description": "Preset for github actions CI Linux build",
+      "configurePreset": "gh-Linux",
+      "jobs": 4
+    },
+    {
+      "name": "gh-macOS",
+      "description": "Preset for github actions CI macOS build",
+      "configurePreset": "gh-macOS",
+      "jobs": 3
+    },
+    {
+      "name": "gh-Windows",
+      "description": "Preset for github actions CI Windows build",
+      "configurePreset": "gh-Windows",
+      "jobs": 4,
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-built",
+      "description": "Test the compiled targets in their build directory",
+      "configurePreset": "full-test",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    }
+  ]
+}
