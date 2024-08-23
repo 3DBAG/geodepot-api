@@ -28,3 +28,21 @@ if(GD_BUILD_APPS)
     COMMAND $<TARGET_FILE:geodepot-init>
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
+
+# --- Bindings
+if(GD_BUILD_BINDINGS)
+  add_test(
+    NAME "geodepot-py"
+    COMMAND python "${CMAKE_SOURCE_DIR}/geodepot-py/example-geodepot.py"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+  if(WIN32)
+    set_tests_properties(
+      "geodepot-py"
+      PROPERTIES ENVIRONMENT
+                 "PYTHONPATH=${CMAKE_BINARY_DIR}/geodepot-py/Release")
+  else()
+    set_tests_properties(
+      "geodepot-py" PROPERTIES ENVIRONMENT
+                               "PYTHONPATH=${CMAKE_BINARY_DIR}/geodepot-py")
+  endif()
+endif()

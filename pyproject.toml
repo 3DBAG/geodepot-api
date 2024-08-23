@@ -1,0 +1,89 @@
+[build-system]
+requires = ["scikit-build-core==0.10.5", "pybind11==2.13.5"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "geodepot"
+version = "0.0.1"
+description = "geodepot API"
+readme = "geodepot-py/README.md"
+authors = [
+    {name = "Balázs Dukai", email = "balazs.dukai@3dgi.nl"}
+]
+requires-python = ">=3.12"
+classifiers = ["Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "cibuildwheel", "ruff"]
+
+
+[tool.scikit-build]
+wheel.expand-macos-universal-tags = true
+wheel.packages = ["geodepot-py/src/geodepot"]
+build.verbose = true
+logging.level = "INFO"
+
+[tool.scikit-build.cmake.define]
+GD_BUILD_TESTING = "OFF"
+GD_BUILD_APPS = "OFF"
+GD_BUILD_BINDINGS = "ON"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = ["--import-mode=importlib", "-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+log_cli_level = "INFO"
+filterwarnings = ["error",
+    "ignore::pytest.PytestCacheWarning",
+]
+testpaths = ["geodepot-py/tests"]
+
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+test-command = "pytest geodepot-py/tests"
+test-extras = ["dev"]
+
+[tool.cibuildwheel.pyodide]
+environment.CFLAGS = "-fexceptions"
+environment.LDFLAGS = "-fexceptions"
+build-frontend = { name = "build", args = ["--exports", "whole_archive"] }
+
+[tool.ruff]
+src = ["geodepot-py/src"]
+
+[tool.ruff.lint]
+extend-select = ["B", # flake8-bugbear
+    "I", # isort
+    "ARG", # flake8-unused-arguments
+    "C4", # flake8-comprehensions
+    "EM", # flake8-errmsg
+    "ICN", # flake8-import-conventions
+    "G", # flake8-logging-format
+    "PGH", # pygrep-hooks
+    "PIE", # flake8-pie
+    "PL", # pylint
+    "PT", # flake8-pytest-style
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "RUF", # Ruff-specific
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
+    "UP", # pyupgrade
+    "YTT", # flake8-2020
+    "EXE", # flake8-executable
+    "NPY", # NumPy specific rules
+    "PD", # pandas-vet
+]
+ignore = [
+    "PLR09", # Too many X
+    "PLR2004", # Magic comparison
+]
+isort.required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.per-file-ignores]
+"geodepot-py/tests/**" = ["T20"]

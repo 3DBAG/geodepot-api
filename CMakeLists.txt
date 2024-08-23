@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.25)
-project(geodepot_api)
+cmake_minimum_required(VERSION 3.19...3.29)
+project(geodepot_api VERSION 0.1.0)
 
 # Options
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
 option(GD_BUILD_TESTING "Enable tests for geodepot" ON)
+option(GD_BUILD_BINDINGS "Build python bindings with pybind" OFF)
 
 # Global CMake variables are set here We use C++20, with the assumption that we
 # only implement features that are supported by GCC, Clang, MSVC, Apple Clang
@@ -25,6 +26,11 @@ add_subdirectory(src)
 # PROJECT EXECUTABLES
 if(GD_BUILD_APPS)
   add_subdirectory(apps)
+endif()
+
+# PROJECT PYTHON BINDINGS
+if(GD_BUILD_BINDINGS)
+  add_subdirectory(geodepot-py)
 endif()
 
 # PROJECT TESTS
