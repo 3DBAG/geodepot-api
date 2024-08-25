@@ -16,9 +16,6 @@ add_executable("test_geodepot" "${CMAKE_CURRENT_SOURCE_DIR}/test_geodepot.cpp")
 target_link_libraries("test_geodepot" PRIVATE geodepot Catch2::Catch2WithMain)
 
 
-GeodepotInit("my urls")
-GeodepotGet("get")
-
 # --- Integration tests that are run on the built executables, before
 # installation.
 if(GD_BUILD_APPS)

@@ -3,7 +3,7 @@ project(geodepot-api VERSION 0.1.0)
 
 # Options
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
-option(GD_BUILD_TESTING "Enable tests for geodepot" ON)
+option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)
 option(GD_BUILD_BINDINGS "Build python bindings with pybind" OFF)
 
 # Global CMake variables are set here We use C++20, with the assumption that we
@@ -20,7 +20,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 include(CPM)
 
 # PROJECT LIBRARY
-set(GEODEPOT_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
+set(GEODEPOT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)
 
 # PROJECT EXECUTABLES

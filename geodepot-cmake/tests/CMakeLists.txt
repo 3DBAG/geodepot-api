@@ -9,18 +9,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
+set(GD_BUILD_TESTING OFF)
+set(GD_BUILD_BINDINGS OFF)
+set(GD_BUILD_APPS ON)
 FetchContent_Declare(
   geodepot-api
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        703bd9caab50b139428cea1aaff9974ebee5742e # release-1.10.0
+  GIT_REPOSITORY git@github.com:3DGI/geodepot-api.git
+  GIT_TAG        d28306a4742a649ed38e26f7b192f63b7dc8a9e1
 )
-FetchContent_MakeAvailable(googletest Catch2)
+FetchContent_MakeAvailable(geodepot-api)
 
-
-geodepotinit("my-url")
-geodepotget("wippolder/wippolder.gpkg")
-
-add_executable("test_geodepot_cmake" "${CMAKE_CURRENT_SOURCE_DIR}/test_geodepot_cmake.cpp")
+add_executable("test_geodepot_cmake" "test_geodepot_cmake.cpp")
 
 add_test(
   NAME "function-using-geodepot-data"
