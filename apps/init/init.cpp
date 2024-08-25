@@ -22,5 +22,5 @@
 
 int main(int argc, char **argv) {
   std::cout << "init: " << geodepot::init() << '\n';
-  return 0;
+  return 12;
 }

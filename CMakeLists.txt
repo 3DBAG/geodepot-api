@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19...3.29)
-project(geodepot_api VERSION 0.1.0)
+project(geodepot-api VERSION 0.1.0)
 
 # Options
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
@@ -31,6 +31,7 @@ endif()
 # PROJECT PYTHON BINDINGS
 if(GD_BUILD_BINDINGS)
   add_subdirectory(geodepot-py)
+#  add_subdirectory(geodepot-cmake)
 endif()
 
 # PROJECT TESTS
