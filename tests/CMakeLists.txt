@@ -15,6 +15,9 @@ FetchContent_MakeAvailable(geodepot_data)
 add_executable("test_geodepot" "${CMAKE_CURRENT_SOURCE_DIR}/test_geodepot.cpp")
 target_link_libraries("test_geodepot" PRIVATE geodepot Catch2::Catch2WithMain)
 
+add_executable("test_sandbox" "${CMAKE_CURRENT_SOURCE_DIR}/test_sandbox.cpp")
+target_link_libraries("test_sandbox" PRIVATE geodepot Catch2::Catch2WithMain)
+
 
 # --- Integration tests that are run on the built executables, before
 # installation.

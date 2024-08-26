@@ -18,9 +18,43 @@
 // Balázs Dukai
 
 #pragma once
+#include <filesystem>
+#include <optional>
+#include <string_view>
 
 namespace geodepot {
 
-int get(void);
-int init(void);
+  struct CaseSpec {
+    std::string case_name;
+    std::string data_name;
+
+    static CaseSpec from_string(std::string casespec_string);
+    [[nodiscard]] std::filesystem::path to_path() const;
+  };
+
+  class Repository {
+   public:
+    Repository() = default;
+    Repository(const Repository&) = default;
+    Repository& operator=(const Repository&) = default;
+    Repository(Repository&&) = default;
+    Repository& operator=(Repository&&) = default;
+    ~Repository() = default;
+
+    static Repository init(std::string_view path);
+    [[nodiscard]] std::optional<std::filesystem::path> get(
+        std::string casespec) const;
+
+   private:
+    std::string remote_url_;  // todo: use local config instead
+    std::filesystem::path path_;
+    std::filesystem::path path_cases_;
+    std::filesystem::path path_index_;
+    std::filesystem::path path_config_local_;
+  };
+
+  bool is_url(std::string_view path);
+
+  bool download(std::string url, std::string dest);
+
 }
