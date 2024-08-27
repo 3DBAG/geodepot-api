@@ -22,37 +22,42 @@
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-TEST_CASE("geodepot") {
-  // auto res = geodepot::get();
-  auto repo = geodepot::Repository::init(
-      "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
-  auto p = repo.get("wippolder/wippolder.gpkg");
-  if (p.has_value()) {
-    std::cout << p.value() << '\n';
-  }
-}
-
-TEST_CASE("casespec_from_string", "[casespec]") {
-  {
+TEST_CASE("casespec can be constructed from a string", "[casespec]") {
+  SECTION("case name and data name") {
     auto cs = geodepot::CaseSpec::from_string("wippolder/wippolder.gpkg");
-    REQUIRE(cs.case_name == "wippolder");
-    REQUIRE(cs.data_name == "wippolder.gpkg");
+    REQUIRE((cs.case_name == "wippolder"));
+    REQUIRE((cs.data_name == "wippolder.gpkg"));
   }
-  {
+  SECTION("data name only") {
     auto cs = geodepot::CaseSpec::from_string("wippolder");
-    REQUIRE(cs.case_name == "wippolder");
+    REQUIRE((cs.case_name == "wippolder"));
     REQUIRE(cs.data_name.empty());
   }
 }
 
-TEST_CASE("casespec_to_path", "[casespec]") {
-  {
-    auto cs_p =
-        geodepot::CaseSpec::from_string("wippolder/wippolder.gpkg").to_path();
-    REQUIRE(cs_p == std::filesystem::path("wippolder/wippolder.gpkg"));
+TEST_CASE("repository can be initialized", "[repository]") {
+  SECTION("init from url") {
+    auto repo = geodepot::Repository(
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+    std::clog << repo.get_repository_path() << "\n";
+    REQUIRE(std::filesystem::exists(repo.get_repository_path()));
   }
-  {
-    auto cs_p = geodepot::CaseSpec::from_string("wippolder").to_path();
-    REQUIRE(cs_p == std::filesystem::path("wippolder"));
+
+  SECTION("init from local path") {
+    auto repo = geodepot::Repository(
+        "/home/balazs/Development/geodepot-api/tests/data/data/mock_project/"
+        ".geodepot");
+    std::clog << repo.get_repository_path() << "\n";
+    REQUIRE(std::filesystem::exists(repo.get_repository_path()));
   }
+
+  std::filesystem::remove_all(".geodepot");
+}
+
+TEST_CASE("data paths can be get from the repository", "[get]") {
+  auto repo = geodepot::Repository(
+      "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+  auto p = repo.get("wippolder/wippolder.gpkg");
+  REQUIRE(p.has_value());
+  REQUIRE(std::filesystem::exists(p.value()));
 }

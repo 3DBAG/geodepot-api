@@ -1,6 +1,10 @@
 import geodepot as m
 
 def test_init():
-    assert m.init() == 0
+    repo = m.Repository("/home/balazs/Development/geodepot-api/tests/data/data/mock_project/"
+        ".geodepot")
+
 def test_get():
-    assert m.get() == 42
+    repo = m.Repository("/home/balazs/Development/geodepot-api/tests/data/data/mock_project/"
+                        ".geodepot")
+    p = repo.get("wippolder/wippolder.zip")

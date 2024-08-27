@@ -17,12 +17,12 @@ PYBIND11_MODULE(_core, m) {
         .. autosummary::
            :toctree: _generate
 
-           init
            get
     )pbdoc";
 
-  m.def("init", &geodepot::init, "Initialize a geodepot repository");
-  m.def("get", &geodepot::get, "Get the full path to a data entry");
+  py::class_<geodepot::Repository>(m, "Repository")
+    .def(py::init<const std::string_view>(), "Initialize a geodepot repository from a local path or a URL")
+    .def("get", &geodepot::Repository::get, "Get the full path to a data entry");
 
   #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

@@ -34,16 +34,12 @@ namespace geodepot {
 
   class Repository {
    public:
+    explicit Repository(std::string_view path);
     Repository() = default;
-    Repository(const Repository&) = default;
-    Repository& operator=(const Repository&) = default;
-    Repository(Repository&&) = default;
-    Repository& operator=(Repository&&) = default;
-    ~Repository() = default;
 
-    static Repository init(std::string_view path);
     [[nodiscard]] std::optional<std::filesystem::path> get(
         std::string casespec) const;
+    std::filesystem::path get_repository_path() const;
 
    private:
     std::string remote_url_;  // todo: use local config instead

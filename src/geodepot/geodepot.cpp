@@ -98,49 +98,46 @@ namespace geodepot {
    *  @brief Connect to an existing local repository or download one from the
    * remote.
    */
-  Repository Repository::init(const std::string_view path) {
-    if (is_url(path) == false) {
-      auto repo = Repository();
+  Repository::Repository(const std::string_view path) {
+    if (is_url(path)) {
+      // Create local dir structure to populate with the files from remote
+      auto path_local_repo = absolute(std::filesystem::path(".geodepot"));
+      auto path_local_cases = path_local_repo / "cases";
+      create_directories(path_local_cases);
+      auto path_remote_index =
+          std::filesystem::path(path).append("index.geojson");
+      auto path_remote_config = std::filesystem::path(path).append("config.json");
+      auto path_local_index = path_local_repo / "index.geojson";
+      auto path_local_config = path_local_repo / "config.json";
+      auto result_index =
+          download(path_remote_index.string(), path_local_index.string());
+      auto result_config =
+          download(path_remote_config.string(), path_local_config.string());
+      // todo: report error
+      remote_url_ = path;  // todo: use local config instead
+      path_ = path_local_repo;
+      path_cases_ = path_local_cases;
+      path_index_ = path_local_index;
+      path_config_local_ = path_local_config;
+    } else {
       auto path_absolute = absolute(std::filesystem::path(path));
       if (auto s = status(path_absolute); !exists(s)) {
         // todo: report error or throw exception
       }
-      repo.path_ = path_absolute;
-      repo.path_cases_ = path_absolute / "cases";
-      if (!exists(repo.path_cases_)) {
+      path_ = path_absolute;
+      path_cases_ = path_absolute / "cases";
+      if (!exists(path_cases_)) {
         // todo: throw MISSING_CASES
       }
-      repo.path_index_ = path_absolute / "index.geojson";
-      if (!exists(repo.path_index_)) {
+      path_index_ = path_absolute / "index.geojson";
+      if (!exists(path_index_)) {
         // todo: throw MISSING_INDEX
       }
-      repo.path_config_local_ = path_absolute / "config.json";
-      if (!exists(repo.path_config_local_)) {
+      path_config_local_ = path_absolute / "config.json";
+      if (!exists(path_config_local_)) {
         // todo: throw MISSING_LOCAL_CONFIG
       }
-      return repo;
     }
-    // Create local dir structure to populate with the files from remote
-    auto path_local_repo = absolute(std::filesystem::path(".geodepot"));
-    auto path_local_cases = path_local_repo / "cases";
-    create_directories(path_local_cases);
-    auto path_remote_index =
-        std::filesystem::path(path).append("index.geojson");
-    auto path_remote_config = std::filesystem::path(path).append("config.json");
-    auto path_local_index = path_local_repo / "index.geojson";
-    auto path_local_config = path_local_repo / "config.json";
-    auto result_index =
-        download(path_remote_index.string(), path_local_index.string());
-    auto result_config =
-        download(path_remote_config.string(), path_local_config.string());
-    // todo: report error
-    auto repo = Repository();
-    repo.remote_url_ = path;  // todo: use local config instead
-    repo.path_ = path_local_repo;
-    repo.path_cases_ = path_local_cases;
-    repo.path_index_ = path_local_index;
-    repo.path_config_local_ = path_local_config;
-    return repo;
   }
 
   // todo: use option return value to indicate that the data is not in the repo
@@ -166,5 +163,8 @@ namespace geodepot {
       }
     }
     return std::nullopt;
+  }
+  std::filesystem::path Repository::get_repository_path() const {
+    return this->path_;
   }
 }  // namespace geodepot
