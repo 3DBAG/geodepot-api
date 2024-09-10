@@ -20,7 +20,6 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 # EXTERNAL LIBRARIES
 include(CPM)
 find_package(CURL REQUIRED)
-cpmaddpackage("gh:kuba--/zip@0.3.2")
 
 # PROJECT LIBRARY
 set(GEODEPOT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")

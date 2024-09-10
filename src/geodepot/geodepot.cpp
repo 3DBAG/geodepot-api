@@ -19,12 +19,12 @@
 
 #include <curl/curl.h>
 #include <geodepot/geodepot.h>
-#include <zip.h>
 
 #include <cstdio>
 #include <cstring>
 #include <ranges>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 // https://stackoverflow.com/questions/2552416/how-can-i-find-the-users-home-dir-in-a-cross-platform-manner-using-c
@@ -143,23 +143,17 @@ namespace geodepot {
   // todo: use option return value to indicate that the data is not in the repo
   std::optional<std::filesystem::path> Repository::get(
       std::string casespec) const {
-    auto cs = CaseSpec::from_string(casespec);
-    auto path = this->path_cases_ / cs.to_path();
-    if (exists(path)) return path;
+    auto cs = CaseSpec::from_string(std::move(casespec));
+    auto path_local_data = this->path_cases_ / cs.to_path();
+    if (exists(path_local_data)) return path_local_data;
     // Try downloading
-    auto path_remote_case_archive =
-        std::filesystem::path(this->remote_url_) / "cases" / cs.case_name;
-    path_remote_case_archive.replace_extension(".zip");
-    auto path_local_case_archive = this->path_cases_ / cs.case_name;
-    path_local_case_archive.replace_extension(".zip");
-    auto res = download(path_remote_case_archive, path_local_case_archive);
+    auto path_remote_data =
+        std::filesystem::path(this->remote_url_) / "cases" / cs.to_path();
+    auto res = download(path_remote_data, path_local_data);
     // todo: check for curl results for not-found and handle it here
     if (res) {
-      bool const ok =
-          zip_extract(path_local_case_archive.c_str(),
-                      this->path_cases_.c_str(), nullptr, nullptr) == 0;
-      if (ok && exists(path)) {
-        return path;
+      if (exists(path_local_data)) {
+        return path_local_data;
       }
     }
     return std::nullopt;

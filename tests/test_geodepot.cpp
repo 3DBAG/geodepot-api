@@ -45,7 +45,7 @@ TEST_CASE("repository can be initialized", "[repository]") {
 
   SECTION("init from local path") {
     auto repo = geodepot::Repository(
-        "/home/balazs/Development/geodepot-api/tests/data/data/mock_project/"
+        "/home/balazs/Development/geodepot-api/tests/data/mock_project/"
         ".geodepot");
     std::clog << repo.get_repository_path() << "\n";
     REQUIRE(std::filesystem::exists(repo.get_repository_path()));

@@ -39,7 +39,7 @@ namespace geodepot {
 
     [[nodiscard]] std::optional<std::filesystem::path> get(
         std::string casespec) const;
-    std::filesystem::path get_repository_path() const;
+    [[nodiscard]] std::filesystem::path get_repository_path() const;
 
    private:
     std::string remote_url_;  // todo: use local config instead
