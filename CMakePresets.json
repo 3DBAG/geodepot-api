@@ -8,7 +8,8 @@
         "CMAKE_BUILD_TYPE": "Release",
         "GD_BUILD_TESTING": "ON",
         "GD_BUILD_APPS": "ON",
-        "GD_BUILD_BINDINGS": "ON"
+        "GD_BUILD_BINDINGS": "ON",
+        "BUILD_SHARED_LIBS": "ON"
       }
     },
     {

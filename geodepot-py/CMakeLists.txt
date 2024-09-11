@@ -7,7 +7,7 @@ find_package(
   REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
-python_add_library(_core MODULE ${LIB_SOURCES} WITH_SOABI)
+python_add_library(_core MODULE ${LIB_SOURCES})
 target_link_libraries(_core PRIVATE ${GEODEPOT_LINK_LIBS} pybind11::headers)
 
 target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})

@@ -31,6 +31,7 @@ logging.level = "INFO"
 GD_BUILD_TESTING = "OFF"
 GD_BUILD_APPS = "OFF"
 GD_BUILD_BINDINGS = "ON"
+BUILD_SHARED_LIBS = "OFF"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -55,35 +56,3 @@ build-frontend = { name = "build", args = ["--exports", "whole_archive"] }
 
 [tool.ruff]
 src = ["geodepot-py/src"]
-
-[tool.ruff.lint]
-extend-select = ["B", # flake8-bugbear
-    "I", # isort
-    "ARG", # flake8-unused-arguments
-    "C4", # flake8-comprehensions
-    "EM", # flake8-errmsg
-    "ICN", # flake8-import-conventions
-    "G", # flake8-logging-format
-    "PGH", # pygrep-hooks
-    "PIE", # flake8-pie
-    "PL", # pylint
-    "PT", # flake8-pytest-style
-    "PTH", # flake8-use-pathlib
-    "RET", # flake8-return
-    "RUF", # Ruff-specific
-    "SIM", # flake8-simplify
-    "T20", # flake8-print
-    "UP", # pyupgrade
-    "YTT", # flake8-2020
-    "EXE", # flake8-executable
-    "NPY", # NumPy specific rules
-    "PD", # pandas-vet
-]
-ignore = [
-    "PLR09", # Too many X
-    "PLR2004", # Magic comparison
-]
-isort.required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.lint.per-file-ignores]
-"geodepot-py/tests/**" = ["T20"]
