@@ -31,7 +31,6 @@ logging.level = "INFO"
 GD_BUILD_TESTING = "OFF"
 GD_BUILD_APPS = "OFF"
 GD_BUILD_BINDINGS = "ON"
-BUILD_SHARED_LIBS = "OFF"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
