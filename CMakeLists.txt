@@ -5,7 +5,7 @@ project(geodepot-api VERSION 0.1.0)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" OFF)
+option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
 
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
 option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)

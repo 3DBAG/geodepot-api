@@ -22,9 +22,19 @@
 #include <optional>
 #include <string_view>
 
+#if defined(_WIN32)
+#  if defined(EXPORTING_MYMATH)
+#    define DECLSPEC __declspec(dllexport)
+#  else
+#    define DECLSPEC __declspec(dllimport)
+#  endif
+#else // non windows
+#  define DECLSPEC
+#endif
+
 namespace geodepot {
 
-  struct CaseSpec {
+  struct DECLSPEC CaseSpec {
     std::string case_name;
     std::string data_name;
 
@@ -32,7 +42,7 @@ namespace geodepot {
     [[nodiscard]] std::filesystem::path to_path() const;
   };
 
-  class Repository {
+  class DECLSPEC Repository {
    public:
     explicit Repository(std::string_view path);
     Repository() = default;
@@ -49,8 +59,8 @@ namespace geodepot {
     std::filesystem::path path_config_local_;
   };
 
-  bool is_url(std::string_view path);
+  bool DECLSPEC is_url(std::string_view path);
 
-  bool download(std::string url, std::string dest);
+  bool DECLSPEC download(std::string url, std::string dest);
 
 }
