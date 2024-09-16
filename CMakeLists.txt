@@ -7,7 +7,9 @@ option(GD_BUILD_BINDINGS "Build python bindings with pybind" OFF)
 option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
 # Set variables for building the bindings
 if(GD_BUILD_BINDINGS)
-  message(STATUS "Configuring static library for Geodepot because GD_BUILD_BINDINGS is ON")
+  message(
+    STATUS
+      "Configuring static library for Geodepot because GD_BUILD_BINDINGS is ON")
   set(BUILD_SHARED_LIBS OFF)
 endif()
 if(NOT BUILD_SHARED_LIBS)
@@ -29,6 +31,21 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 # EXTERNAL LIBRARIES
 include(CPM)
 find_package(CURL REQUIRED)
+cpmaddpackage("gh:libarchive/libarchive@3.7.4")
+cpmaddpackage(
+  NAME
+  libarchive
+  VERSION
+  3.7.4
+  GITHUB_REPOSITORY
+  libarchive/libarchive
+  OPTIONS
+  "ENABLE_TAR ON"
+  "ENABLE_TAR_SHARED ON"
+  "ENABLE_TEST OFF"
+  "ENABLE_CPIO OFF"
+  "ENABLE_XATTR OFF"
+  "ENABLE_ACL OFF")
 
 # PROJECT LIBRARY
 set(GEODEPOT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")

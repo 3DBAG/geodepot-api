@@ -17,7 +17,7 @@
 // Author(s):
 // Balázs Dukai
 
-#include <geodepot/geodepot.h>
+#include <geodepot.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
@@ -35,7 +35,7 @@ TEST_CASE("casespec can be constructed from a string", "[casespec]") {
   }
 }
 
-TEST_CASE("repository can be initialized", "[repository]") {
+TEST_CASE("repository can be initialized", "[init]") {
   SECTION("init from url") {
     auto repo = geodepot::Repository(
         "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");

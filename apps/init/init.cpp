@@ -18,7 +18,7 @@
 // Balázs Dukai
 
 #include <iostream>
-#include <geodepot/geodepot.h>
+#include <geodepot.h>
 
 int main(int argc, char **argv) {
   std::cout << "init: " << geodepot::init() << '\n';

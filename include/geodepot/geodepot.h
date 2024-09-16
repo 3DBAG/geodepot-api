@@ -57,6 +57,8 @@ namespace geodepot {
     std::filesystem::path path_cases_;
     std::filesystem::path path_index_;
     std::filesystem::path path_config_local_;
+
+    bool is_valid() const;
   };
 
   bool DECLSPEC is_url(std::string_view path);

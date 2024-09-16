@@ -18,16 +18,23 @@
 // Balázs Dukai
 
 #include <curl/curl.h>
-#include <geodepot/geodepot.h>
+#include <geodepot.h>
+#include <untar.h>
 
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <ranges>
 #include <sstream>
 #include <utility>
 #include <vector>
 
 // https://stackoverflow.com/questions/2552416/how-can-i-find-the-users-home-dir-in-a-cross-platform-manner-using-c
+
+void close_file(std::FILE* fp)
+{
+  std::fclose(fp);
+}
 
 namespace geodepot {
   bool is_url(std::string_view path) {
@@ -140,22 +147,66 @@ namespace geodepot {
     }
   }
 
+  /**
+   * @brief Check if the repository is valid.
+   * @return Boolean to indicate the validity.
+   */
+  bool Repository::is_valid() const {
+    if (!exists(this->path_)) {
+      return false;
+    }
+    if (!exists(this->path_cases_)) {
+      return false;
+    }
+    if (!exists(this->path_index_)) {
+      return false;
+    }
+    if (!exists(this->path_config_local_)) {
+      return false;
+    }
+    return true;
+  }
+
   // todo: use option return value to indicate that the data is not in the repo
   std::optional<std::filesystem::path> Repository::get(
       std::string casespec) const {
+    if (!this->is_valid()) {
+      // todo: throw
+      std::cout << "invalid repo" << "\n";
+      return std::nullopt;
+    }
+    auto casespec_archive = casespec + ".tar";
+    auto cs_archive = CaseSpec::from_string(std::move(casespec_archive));
+    auto path_local_archive = this->path_cases_ / cs_archive.to_path();
     auto cs = CaseSpec::from_string(std::move(casespec));
     auto path_local_data = this->path_cases_ / cs.to_path();
+    auto path_local_case = this->path_cases_ / cs.case_name;
+
+    // Exit early
     if (exists(path_local_data)) return path_local_data;
-    // Try downloading
-    auto path_remote_data =
-        std::filesystem::path(this->remote_url_) / "cases" / cs.to_path();
-    auto res = download(path_remote_data, path_local_data);
-    // todo: check for curl results for not-found and handle it here
-    if (res) {
-      if (exists(path_local_data)) {
-        return path_local_data;
+
+    if (!exists(path_local_archive)) {
+      // Create case dir first, if doesn't exist
+      std::filesystem::create_directory(path_local_case);
+      // Try downloading
+      auto path_remote_archive =
+          std::filesystem::path(this->remote_url_) / "cases" / cs_archive.to_path();
+      auto res = download(path_remote_archive, path_local_archive);
+      // todo: check for curl results for not-found and handle it here
+      if (!res) {
+        if (!exists(path_local_archive)) {
+          // todo: throw
+        }
       }
     }
+    using unique_file_t = std::unique_ptr<std::FILE, decltype(&close_file)>;
+    unique_file_t const tar_p(std::fopen(path_local_archive.c_str(), "rb"), &close_file);
+    if (tar_p) {
+      untar(tar_p.get(), path_local_data.c_str());
+      if (exists(path_local_data)) return path_local_data;
+      // throw failed to decompress
+    }
+
     return std::nullopt;
   }
   std::filesystem::path Repository::get_repository_path() const {
