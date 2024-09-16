@@ -17,7 +17,7 @@
 // Author(s):
 // Balázs Dukai
 
-#include <geodepot.h>
+#include <geodepot/geodepot.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>

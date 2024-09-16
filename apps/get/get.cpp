@@ -18,7 +18,7 @@
 // Balázs Dukai
 
 #include <iostream>
-#include <geodepot.h>
+#include <geodepot/geodepot.h>
 
 int main(int argc, char **argv) {
   std::cout << "get: " << geodepot::get() << '\n';
