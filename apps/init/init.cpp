@@ -20,7 +20,10 @@
 #include <iostream>
 #include <geodepot/geodepot.h>
 
-int main(int argc, char **argv) {
-  std::cout << "init: " << geodepot::init() << '\n';
-  return 12;
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " URL" << '\n';
+  }
+  auto repo = geodepot::Repository(argv[1]);
+  std::cout << repo.get_repository_path() << "\n";
 }

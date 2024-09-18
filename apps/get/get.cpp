@@ -20,7 +20,14 @@
 #include <iostream>
 #include <geodepot/geodepot.h>
 
-int main(int argc, char **argv) {
-  std::cout << "get: " << geodepot::get() << '\n';
-  return 0;
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " CASESPEC" << '\n';
+  }
+  auto repo = geodepot::Repository(std::filesystem::current_path().string());
+  std::cout << repo.get_repository_path() << "\n";
+  auto p = repo.get(argv[1]);
+  if (p.has_value()) {
+    std::cout << p.value() << '\n';
+  }
 }

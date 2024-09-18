@@ -52,7 +52,6 @@ namespace geodepot {
     [[nodiscard]] std::filesystem::path get_repository_path() const;
 
    private:
-    std::string remote_url_;  // todo: use local config instead
     std::filesystem::path path_;
     std::filesystem::path path_cases_;
     std::filesystem::path path_index_;

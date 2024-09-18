@@ -45,8 +45,7 @@ TEST_CASE("repository can be initialized", "[init]") {
 
   SECTION("init from local path") {
     auto repo = geodepot::Repository(
-        "/home/balazs/Development/geodepot-api/tests/data/mock_project/"
-        ".geodepot");
+        "/home/balazs/Development/geodepot-api/tests/data/mock_project");
     std::clog << repo.get_repository_path() << "\n";
     REQUIRE(std::filesystem::exists(repo.get_repository_path()));
   }
@@ -55,9 +54,26 @@ TEST_CASE("repository can be initialized", "[init]") {
 }
 
 TEST_CASE("data paths can be get from the repository", "[get]") {
-  auto repo = geodepot::Repository(
-      "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
-  auto p = repo.get("wippolder/wippolder.gpkg");
-  REQUIRE(p.has_value());
-  REQUIRE(std::filesystem::exists(p.value()));
+  SECTION("init first from url then load the from local and get data") {
+    auto tmp_dir = std::filesystem::temp_directory_path();
+    std::filesystem::current_path(tmp_dir);
+    auto repo = geodepot::Repository(
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+    repo = geodepot::Repository(tmp_dir.string());
+    std::clog << repo.get_repository_path() << "\n";
+    auto p = repo.get("wippolder/wippolder.gpkg");
+    REQUIRE(p.has_value());
+    REQUIRE(std::filesystem::exists(p.value()));
+    std::filesystem::remove_all(tmp_dir / ".geodepot");
+  }
+
+  SECTION("init from remote and get data") {
+    auto repo = geodepot::Repository(
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+    auto p = repo.get("wippolder/wippolder.gpkg");
+    REQUIRE(p.has_value());
+    REQUIRE(std::filesystem::exists(p.value()));
+  }
+
+  std::filesystem::remove_all(".geodepot");
 }

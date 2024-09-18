@@ -24,11 +24,15 @@
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <ranges>
 #include <sstream>
 #include <utility>
 #include <vector>
+
+using json = nlohmann::json;
 
 // https://stackoverflow.com/questions/2552416/how-can-i-find-the-users-home-dir-in-a-cross-platform-manner-using-c
 
@@ -207,15 +211,30 @@ namespace geodepot {
       auto result_config =
           download(path_remote_config.string(), path_local_config.string());
       // todo: report error
-      remote_url_ = path;  // todo: use local config instead
       path_ = path_local_repo;
       path_cases_ = path_local_cases;
       path_index_ = path_local_index;
       path_config_local_ = path_local_config;
+
+      std::ifstream f(path_config_local_);
+      json config = json::parse(f);
+      // todo: error handling
+      if (config.contains("remotes")) {
+        config["remotes"]["origin"] = json::object({{ "url", path }});
+      }
+      auto config_str = config.dump();
+      {
+        std::ofstream out(path_config_local_);
+        out.write(config_str.c_str(), config_str.size());
+      }
+
     } else {
-      auto path_absolute = absolute(std::filesystem::path(path));
+      auto path_absolute = absolute(std::filesystem::path(path)) / ".geodepot";
       if (auto s = status(path_absolute); !exists(s)) {
-        // todo: report error or throw exception
+        // Try the parent directory
+        if (exists(path_absolute.parent_path() / ".geodepot")) {
+          path_absolute = path_absolute.parent_path() / ".geodepot";
+        }
       }
       path_ = path_absolute;
       path_cases_ = path_absolute / "cases";
@@ -239,15 +258,19 @@ namespace geodepot {
    */
   bool Repository::is_valid() const {
     if (!exists(this->path_)) {
+      std::cout << "repo path_ doesn't exist" << "\n";
       return false;
     }
     if (!exists(this->path_cases_)) {
+      std::cout << "repo path_cases_ doesn't exist " << this->path_cases_ << "\n";
       return false;
     }
     if (!exists(this->path_index_)) {
+      std::cout << "repo path_index_ doesn't exist " << this->path_index_ << "\n";
       return false;
     }
     if (!exists(this->path_config_local_)) {
+      std::cout << "repo path_config_local_ doesn't exist" << this->path_config_local_ << "\n";
       return false;
     }
     return true;
@@ -276,7 +299,20 @@ namespace geodepot {
       // Create case dir first, if doesn't exist
       std::filesystem::create_directory(path_local_case);
       // Try downloading
-      auto path_remote_archive = std::filesystem::path(this->remote_url_) /
+      std::string remote_url{};
+      std::ifstream f(this->path_config_local_);
+      json config = json::parse(f);
+      if (config.contains("remotes")) {
+        auto remotes = config["remotes"];
+        if (remotes.contains("origin")) {
+          remote_url = std::string(remotes["origin"]["url"]);
+        }
+      }
+      if (remote_url.empty()) {
+        // todo: throw
+        return std::nullopt;
+      }
+      auto path_remote_archive = std::filesystem::path(remote_url) /
                                  "cases" / cs_archive.to_path();
       auto res = download(path_remote_archive, path_local_archive);
       // todo: check for curl results for not-found and handle it here

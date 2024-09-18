@@ -8,16 +8,40 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Don't use extensions, because they might affect compiler compatibility
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# -----
 include(FetchContent)
 set(GD_BUILD_TESTING OFF)
 set(GD_BUILD_BINDINGS OFF)
 set(GD_BUILD_APPS ON)
 FetchContent_Declare(
   geodepot-api
-  GIT_REPOSITORY git@github.com:3DGI/geodepot-api.git
-  GIT_TAG        d28306a4742a649ed38e26f7b192f63b7dc8a9e1
+  /home/balazs/Development/geodepot-api
 )
 FetchContent_MakeAvailable(geodepot-api)
+
+function(GeodepotInit URL)
+    message(${URL})
+    execute_process(
+            COMMAND geodepot-init ${URL}
+            OUTPUT_VARIABLE GEODEPOT_INIT_RESULT
+    )
+endfunction()
+
+function(GeodepotGet CASESPEC)
+    message(${CASESPEC})
+    execute_process(
+            COMMAND geodepot-get ${CASESPEC}
+            OUTPUT_VARIABLE GEODEPOT_GET_RESULT
+    )
+endfunction()
+
+# -----
+
+GeodepotInit("https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot")
+GeodepotGet("wippolder/wippolder.gpkg")
+
+message(STATUS ${GEODEPOT_INIT_RESULT})
+message(STATUS ${GEODEPOT_GET_RESULT})
 
 add_executable("test_geodepot_cmake" "test_geodepot_cmake.cpp")
 

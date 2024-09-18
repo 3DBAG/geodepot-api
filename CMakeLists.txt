@@ -30,13 +30,15 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
 # EXTERNAL LIBRARIES
 include(CPM)
+set(CPM_USE_LOCAL_PACKAGES ON)
 find_package(CURL REQUIRED)
-cpmaddpackage("gh:libarchive/libarchive@3.7.4")
-cpmaddpackage(
+CPMAddPackage("gh:nlohmann/json@3.10.5")
+# todo: use findlibarchive so that i don't need to pin the version https://cmake.org/cmake/help/latest/module/FindLibArchive.html#findlibarchive
+CPMAddPackage(
   NAME
   libarchive
   VERSION
-  3.7.4
+  3.7.2
   GITHUB_REPOSITORY
   libarchive/libarchive
   OPTIONS
