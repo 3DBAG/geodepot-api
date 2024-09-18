@@ -31,23 +31,31 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 # EXTERNAL LIBRARIES
 include(CPM)
 set(CPM_USE_LOCAL_PACKAGES ON)
-find_package(CURL REQUIRED)
-CPMAddPackage("gh:nlohmann/json@3.10.5")
-# todo: use findlibarchive so that i don't need to pin the version https://cmake.org/cmake/help/latest/module/FindLibArchive.html#findlibarchive
-CPMAddPackage(
-  NAME
-  libarchive
-  VERSION
-  3.7.2
-  GITHUB_REPOSITORY
-  libarchive/libarchive
-  OPTIONS
-  "ENABLE_TAR ON"
-  "ENABLE_TAR_SHARED ON"
-  "ENABLE_TEST OFF"
-  "ENABLE_CPIO OFF"
-  "ENABLE_XATTR OFF"
-  "ENABLE_ACL OFF")
+
+find_package(CURL 8 REQUIRED)
+
+find_package(nlohmann_json 3.7)
+if (NOT nlohmann_json_FOUND)
+  CPMAddPackage("gh:nlohmann/json@3.11.3")
+endif()
+
+find_package(libarchive 3)
+if(NOT LibArchive_FOUND)
+  CPMAddPackage(
+    NAME
+    libarchive
+    VERSION
+    3.7.2
+    GITHUB_REPOSITORY
+    libarchive/libarchive
+    OPTIONS
+    "ENABLE_TAR ON"
+    "ENABLE_TAR_SHARED ON"
+    "ENABLE_TEST OFF"
+    "ENABLE_CPIO OFF"
+    "ENABLE_XATTR OFF"
+    "ENABLE_ACL OFF")
+endif()
 
 # PROJECT LIBRARY
 set(GEODEPOT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
