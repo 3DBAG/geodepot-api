@@ -38,7 +38,7 @@ TEST_CASE("casespec can be constructed from a string", "[casespec]") {
 TEST_CASE("repository can be initialized", "[init]") {
   SECTION("init from url") {
     auto repo = geodepot::Repository(
-        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project");
     std::clog << repo.get_repository_path() << "\n";
     REQUIRE(std::filesystem::exists(repo.get_repository_path()));
   }
@@ -58,7 +58,7 @@ TEST_CASE("data paths can be get from the repository", "[get]") {
     auto tmp_dir = std::filesystem::temp_directory_path();
     std::filesystem::current_path(tmp_dir);
     auto repo = geodepot::Repository(
-        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project");
     repo = geodepot::Repository(tmp_dir.string());
     std::clog << repo.get_repository_path() << "\n";
     auto p = repo.get("wippolder/wippolder.gpkg");
@@ -69,7 +69,7 @@ TEST_CASE("data paths can be get from the repository", "[get]") {
 
   SECTION("init from remote and get data") {
     auto repo = geodepot::Repository(
-        "https://data.3dgi.xyz/geodepot-test-data/mock_project/.geodepot");
+        "https://data.3dgi.xyz/geodepot-test-data/mock_project");
     auto p = repo.get("wippolder/wippolder.gpkg");
     REQUIRE(p.has_value());
     REQUIRE(std::filesystem::exists(p.value()));

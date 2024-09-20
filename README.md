@@ -32,5 +32,3 @@ You need [just](https://just.systems/) for downloading the data for running the 
 just download-data
 ```
 
-### Testing
-

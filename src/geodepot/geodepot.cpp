@@ -200,10 +200,9 @@ namespace geodepot {
       auto path_local_repo = absolute(std::filesystem::path(".geodepot"));
       auto path_local_cases = path_local_repo / "cases";
       create_directories(path_local_cases);
-      auto path_remote_index =
-          std::filesystem::path(path).append("index.geojson");
-      auto path_remote_config =
-          std::filesystem::path(path).append("config.json");
+      auto path_remote = std::filesystem::path(path) / ".geodepot";
+      auto path_remote_index = path_remote / "index.geojson";
+      auto path_remote_config = path_remote / "config.json";
       auto path_local_index = path_local_repo / "index.geojson";
       auto path_local_config = path_local_repo / "config.json";
       auto result_index =
