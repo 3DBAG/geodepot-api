@@ -12,11 +12,11 @@ The API is implemented in multiple languages:
 ## Command line tool (CLI)
 
 The Geodepot API is solely meant for accessing the data in an existing Geodepot repository.
-With the [Geodepot command line tool](https://github.com/3DGI/geodepot) it is possible to create and manage a Geodepot repository.
+With the [Geodepot command line tool](https://github.com/3DBAG/geodepot) it is possible to create and manage a Geodepot repository.
 
 ## Documentation
 
-https://3DGI.github.io/geodepot
+https://3DBAG.github.io/geodepot
 
 ## Development
 

@@ -1,0 +1,25 @@
+name: Package and Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: write
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          repository: 3DBAG/geodepot-api
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: geodepot-cmake/GeoDepot.cmake
