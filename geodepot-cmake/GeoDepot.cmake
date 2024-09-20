@@ -1,3 +1,5 @@
+message(STATUS "Using Geodepot version 1.0.3")
+
 include(FetchContent)
 FetchContent_Declare(
   geodepot-api
