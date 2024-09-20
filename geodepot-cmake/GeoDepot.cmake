@@ -1,4 +1,4 @@
-message(STATUS "Using Geodepot version 1.0.3")
+message(STATUS "Using Geodepot version 1.0.4")
 
 include(FetchContent)
 FetchContent_Declare(
