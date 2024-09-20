@@ -17,5 +17,5 @@ add_executable("test_geodepot_cmake" "test_geodepot_cmake.cpp")
 enable_testing()
 add_test(
   NAME "function-using-geodepot-data"
-  COMMAND test_geodepot_cmake "${GEODEPOT_CASES}/wippolder/wippolder.gpkg"
+  COMMAND test_geodepot_cmake "${GEODEPOT_DIR}/wippolder/wippolder.gpkg"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
