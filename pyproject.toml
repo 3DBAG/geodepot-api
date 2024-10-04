@@ -1,9 +1,9 @@
 [build-system]
-requires = ["scikit-build-core==0.10.5", "pybind11==2.13.5"]
+requires = ["scikit-build-core==0.10.5", "nanobind==2.2.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "geodepot"
+name = "geodepot_api"
 version = "1.0.4"
 description = "geodepot API"
 readme = "geodepot-py/README.md"
@@ -23,9 +23,13 @@ dev = ["pytest", "cibuildwheel", "ruff"]
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
-wheel.packages = ["geodepot-py/src/geodepot"]
+wheel.packages = ["geodepot-py/src/geodepot_api"]
 build.verbose = true
 logging.level = "INFO"
+# Build stable ABI wheels for CPython 3.12+
+wheel.py-api = "cp312"
+# Setuptools-style build caching in a local directory
+build-dir = "build/{wheel_tag}"
 
 [tool.scikit-build.cmake.define]
 GD_BUILD_TESTING = "OFF"

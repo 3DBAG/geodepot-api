@@ -1,10 +1,11 @@
+# Must be min. 3.19 because of nanobind
 cmake_minimum_required(VERSION 3.19...3.29)
 project(geodepot-api VERSION 1.0.4)
 
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
 option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)
-option(GD_BUILD_BINDINGS "Build python bindings with pybind" OFF)
-option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
+option(GD_BUILD_BINDINGS "Build python bindings with pybind" ON)
+option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" OFF)
 # Set variables for building the bindings
 if(GD_BUILD_BINDINGS)
   message(
@@ -28,6 +29,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # CMake modules, like the documentation module, go in here
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
+add_compile_options(-Wno-dev)
+
 # EXTERNAL LIBRARIES
 include(CPM)
 set(CPM_USE_LOCAL_PACKAGES ON)
@@ -39,7 +42,7 @@ if (NOT nlohmann_json_FOUND)
   CPMAddPackage("gh:nlohmann/json@3.11.3")
 endif()
 
-find_package(libarchive 3)
+find_package(libarchive 3 QUIET)
 if(NOT LibArchive_FOUND)
   CPMAddPackage(
     NAME

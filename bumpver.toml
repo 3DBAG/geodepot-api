@@ -23,3 +23,6 @@ push = false
 "geodepot-cmake/GeoDepot.cmake" = [
     'message(STATUS "Using Geodepot version {version}")'
 ]
+"geodepot-rs/Cargo.toml" = [
+    'version = "{version}"'
+]

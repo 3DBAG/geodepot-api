@@ -7,3 +7,10 @@
 
 # CMake
 CMakeUserPresets.json
+
+# Rust
+geodepot-rs/Cargo.lock
+geodepot-rs/target/
+
+# Build dirs
+build

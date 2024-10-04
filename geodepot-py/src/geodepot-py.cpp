@@ -1,18 +1,18 @@
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <geodepot/geodepot.h>
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
-PYBIND11_MODULE(_core, m) {
+NB_MODULE(_core, m) {
   m.doc() = R"pbdoc(
         geodepot API
         ------------
 
-        .. currentmodule:: geodepot
+        .. currentmodule:: geodepot_api
 
         .. autosummary::
            :toctree: _generate
@@ -20,8 +20,8 @@ PYBIND11_MODULE(_core, m) {
            get
     )pbdoc";
 
-  py::class_<geodepot::Repository>(m, "Repository")
-    .def(py::init<const std::string_view>(), "Initialize a geodepot repository from a local path or a URL")
+  nb::class_<geodepot::Repository>(m, "Repository")
+    .def(nb::init_implicit<const std::string_view>(), "Initialize a geodepot repository from a local path or a URL")
     .def("get", &geodepot::Repository::get, "Get the full path to a data entry");
 
   #ifdef VERSION_INFO
