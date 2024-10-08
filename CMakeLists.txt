@@ -5,7 +5,7 @@ project(geodepot-api VERSION 1.0.4)
 option(GD_BUILD_APPS "Build applications in addition to library" ON)
 option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)
 option(GD_BUILD_BINDINGS "Build python bindings with pybind" ON)
-option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" OFF)
+option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
 # Set variables for building the bindings
 if(GD_BUILD_BINDINGS)
   message(
@@ -48,12 +48,12 @@ if(NOT LibArchive_FOUND)
     NAME
     libarchive
     VERSION
-    3.7.2
+    3.7.6
     GITHUB_REPOSITORY
     libarchive/libarchive
     OPTIONS
     "ENABLE_TAR ON"
-    "ENABLE_TAR_SHARED ON"
+    "ENABLE_TAR_SHARED OFF"
     "ENABLE_TEST OFF"
     "ENABLE_CPIO OFF"
     "ENABLE_XATTR OFF"

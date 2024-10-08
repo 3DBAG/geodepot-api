@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
   geodepot_data
   URL "${DATA_URL_ROOT}/data.zip"
-  URL_HASH MD5=cc270ef8cfa76ad940c19ea2cb24ad5d
+  URL_HASH MD5=6e5dee7ef161f83df393a511341e75e5
   SOURCE_DIR "${DATA_DIR}")
 FetchContent_MakeAvailable(geodepot_data)
 
