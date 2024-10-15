@@ -35,9 +35,13 @@ add_compile_options(-Wno-dev)
 include(CPM)
 set(CPM_USE_LOCAL_PACKAGES ON)
 
-find_package(CURL 8 REQUIRED)
+CPMAddPackage(
+  NAME CURL
+  VERSION 8.0.0
+  URL https://curl.se/download/curl-8.10.1.tar.gz
+)
 
-find_package(nlohmann_json 3.7)
+find_package(nlohmann_json 3.7 QUIET)
 if (NOT nlohmann_json_FOUND)
   CPMAddPackage("gh:nlohmann/json@3.11.3")
 endif()

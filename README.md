@@ -32,3 +32,10 @@ You need [just](https://just.systems/) for downloading the data for running the 
 just download-data
 ```
 
+### Python bindings
+
+Install the development dependencies:
+
+```shell
+python -m pip install ".[dev,package]"
+```

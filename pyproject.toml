@@ -7,19 +7,19 @@ name = "geodepot_api"
 version = "1.0.4"
 description = "geodepot API"
 readme = "geodepot-py/README.md"
-authors = [
-    {name = "Balázs Dukai", email = "balazs.dukai@3dgi.nl"}
-]
-requires-python = ">=3.12"
+authors = [{ name = "Balázs Dukai", email = "balazs.dukai@3dgi.nl" }]
+requires-python = ">=3.10"
 classifiers = ["Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "cibuildwheel", "ruff"]
-
+dev = ["ruff", "pytest"]
+package = ["cibuildwheel", "twine", "uv", "build"]
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
@@ -46,16 +46,33 @@ filterwarnings = ["error",
 ]
 testpaths = ["geodepot-py/tests"]
 
-
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 test-command = "pytest geodepot-py/tests"
 test-extras = ["dev"]
+archs = ["auto64"]
 
-[tool.cibuildwheel.pyodide]
-environment.CFLAGS = "-fexceptions"
-environment.LDFLAGS = "-fexceptions"
-build-frontend = { name = "build", args = ["--exports", "whole_archive"] }
+[tool.cibuildwheel.linux]
+before-build = [
+    "yum install -y cmake libcurl openssl-devel",
+]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-build = [
+    "apk add cmake libcurl openssl",
+]
+
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET="10.9" }
+before-build = [
+    "brew install coreutils cmake curlpp openssl",
+]
+
+[tool.cibuildwheel.windows]
+before-build = [
+    "chocolatey install libcurl",
+]
 
 [tool.ruff]
 src = ["geodepot-py/src"]
