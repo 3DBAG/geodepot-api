@@ -32,3 +32,6 @@ You need [just](https://just.systems/) for downloading the data for running the 
 just download-data
 ```
 
+## 3DBAG organisation
+
+This software is part of the 3DBAG project. For more information visit the [3DBAG organisation](https://github.com/3DBAG).
