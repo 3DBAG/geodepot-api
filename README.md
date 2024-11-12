@@ -16,7 +16,7 @@ With the [Geodepot command line tool](https://github.com/3DBAG/geodepot) it is p
 
 ## Documentation
 
-https://3DBAG.github.io/geodepot
+https://innovation.3dbag.nl/geodepot
 
 ## Development
 
