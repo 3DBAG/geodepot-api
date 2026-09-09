@@ -1,0 +1,10 @@
+services:
+  server:
+    build: ${GEODEPOT_SOURCE}/docker
+    ports:
+      - "127.0.0.1::80"
+    volumes:
+      - ${GEODEPOT_FIXTURE}:/srv/geodepot:ro
+      - ./nginx_server.conf:/etc/nginx/sites-available/geodepot.conf:ro
+    environment:
+      SSH_PUBLIC_KEY: ""

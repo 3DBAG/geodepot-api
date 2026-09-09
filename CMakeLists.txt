@@ -1,87 +1,31 @@
-# Must be min. 3.19 because of nanobind
-cmake_minimum_required(VERSION 3.19...3.29)
-project(geodepot-api VERSION 1.0.4)
-
-option(GD_BUILD_APPS "Build applications in addition to library" ON)
-option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)
-option(GD_BUILD_BINDINGS "Build python bindings with pybind" ON)
-option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
-## Set variables for building the bindings
-#if(GD_BUILD_BINDINGS)
-#  message(
-#    STATUS
-#      "Configuring static library for Geodepot because GD_BUILD_BINDINGS is ON")
-#  set(BUILD_SHARED_LIBS OFF)
-#endif()
-if(NOT BUILD_SHARED_LIBS)
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-endif()
-
-# Global CMake variables are set here We use C++20, with the assumption that we
-# only implement features that are supported by GCC, Clang, MSVC, Apple Clang
+cmake_minimum_required(VERSION 3.20)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+project(geodepot-api VERSION 1.2.0 LANGUAGES CXX)
+option(GD_BUILD_APPS "Build geodepot-get" ON)
+option(GD_BUILD_TESTING "Build tests" OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# Don't use extensions, because they might affect compiler compatibility
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# CMake modules, like the documentation module, go in here
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
-
-add_compile_options(-Wno-dev)
-
-# EXTERNAL LIBRARIES
-include(CPM)
-set(CPM_USE_LOCAL_PACKAGES ON)
-
-CPMAddPackage(
-  NAME CURL
-  VERSION 8.0.0
-  URL https://curl.se/download/curl-8.10.1.tar.gz
-)
-
-find_package(nlohmann_json 3.7 QUIET)
-if (NOT nlohmann_json_FOUND)
-  CPMAddPackage("gh:nlohmann/json@3.11.3")
+find_package(CURL REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(nlohmann_json 3.11 QUIET)
+if(NOT nlohmann_json_FOUND)
+ include(cmake/CPM.cmake)
+ CPMAddPackage("gh:nlohmann/json@3.11.3")
 endif()
-
-find_package(libarchive 3 QUIET)
-if(NOT LibArchive_FOUND)
-  CPMAddPackage(
-    NAME
-    libarchive
-    VERSION
-    3.7.6
-    GITHUB_REPOSITORY
-    libarchive/libarchive
-    OPTIONS
-    "ENABLE_TAR ON"
-    "ENABLE_TAR_SHARED ON"
-    "ENABLE_TEST OFF"
-    "ENABLE_CPIO OFF"
-    "ENABLE_XATTR OFF"
-    "ENABLE_ACL OFF")
+find_package(LibArchive QUIET)
+if(LibArchive_FOUND)
+ set(GEODEPOT_ARCHIVE_TARGET LibArchive::LibArchive)
+else()
+ include(cmake/CPM.cmake)
+ CPMAddPackage(NAME libarchive GITHUB_REPOSITORY libarchive/libarchive GIT_TAG v3.7.7 OPTIONS "ENABLE_TAR ON" "ENABLE_TAR_SHARED OFF" "ENABLE_TEST OFF" "ENABLE_CPIO OFF" "ENABLE_XATTR OFF" "ENABLE_ACL OFF")
+ set(GEODEPOT_ARCHIVE_TARGET archive_static)
 endif()
-
-# PROJECT LIBRARY
 set(GEODEPOT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(src)
-
-# PROJECT EXECUTABLES
 if(GD_BUILD_APPS)
-  add_subdirectory(apps)
+ add_subdirectory(apps)
 endif()
-
-# PROJECT PYTHON BINDINGS
-if(GD_BUILD_BINDINGS)
-  add_subdirectory(geodepot-py)
-  # add_subdirectory(geodepot-cmake)
-endif()
-
-# PROJECT TESTS
 if(GD_BUILD_TESTING)
-  # Must enable_testing() before add_subdirectory(tests)
-  enable_testing()
-  add_subdirectory(tests)
+ enable_testing()
+ add_subdirectory(tests)
 endif()
