@@ -16,7 +16,7 @@ With the [Geodepot command line tool](https://github.com/3DBAG/geodepot) it is p
 
 ## Documentation
 
-https://3DBAG.github.io/geodepot
+https://innovation.3dbag.nl/geodepot
 
 ## Development
 
@@ -39,3 +39,8 @@ Install the development dependencies:
 ```shell
 python -m pip install ".[dev,package]"
 ```
+
+## 3DBAG organisation
+
+This software is part of the 3DBAG project. For more information visit the [3DBAG organisation](https://github.com/3DBAG).
+
