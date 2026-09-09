@@ -8,12 +8,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import shlex
+import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
+import urllib.error
+import urllib.request
 import uuid
 
 
@@ -140,6 +143,21 @@ def endpoint(compose_file: Path, project: str, environment: dict[str, str]) -> s
     return "http://" + value + "/geodepot"
 
 
+def wait_for_endpoint(remote: str) -> None:
+    deadline = time.monotonic() + 30
+    last_error = "service did not become ready"
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(remote + "/release.json", timeout=1) as response:
+                if response.status == 200:
+                    return
+                last_error = f"HTTP {response.status}"
+        except (OSError, urllib.error.URLError) as error:
+            last_error = str(error)
+        time.sleep(0.25)
+    raise RuntimeError(f"integration HTTP service did not become ready: {last_error}")
+
+
 def assert_payloads(root: Path, entries: dict[str, Path]) -> None:
     for casespec, source in entries.items():
         destination = root.joinpath(*casespec.split("/"))
@@ -224,6 +242,7 @@ def main() -> int:
             compose(compose_file, project, environment, "up", "--detach", "--build")
             started = True
             remote = endpoint(compose_file, project, environment)
+            wait_for_endpoint(remote)
             lock = work / "geodepot.lock"
             write_lock(lock, remote, fixture)
 

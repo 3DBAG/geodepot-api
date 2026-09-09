@@ -1,1 +1,0 @@
-Ref.: https://github.com/pybind/scikit_build_example
