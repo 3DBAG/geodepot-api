@@ -1,334 +1,56 @@
-// Copyright (c) 2024 Balázs Dukai (3DGI), Ravi Peters (3DGI)
-//
-// This file is part of geodepot (https://github.com/3DGI/geodepot)
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Author(s):
-// Balázs Dukai
-
+#include <geodepot/geodepot.h>
 #include <archive.h>
 #include <archive_entry.h>
 #include <curl/curl.h>
-#include <geodepot/geodepot.h>
-
-#include <cstdio>
-#include <cstring>
-#include <fstream>
-#include <iostream>
 #include <nlohmann/json.hpp>
-#include <ranges>
+#include <openssl/sha.h>
+#include <algorithm>
+#include <array>
+#include <cstdio>
+#include <fstream>
+#include <map>
+#include <random>
+#include <set>
 #include <sstream>
-#include <utility>
-#include <vector>
-
-using json = nlohmann::json;
-
-// https://stackoverflow.com/questions/2552416/how-can-i-find-the-users-home-dir-in-a-cross-platform-manner-using-c
-
-namespace {
-  void close_file(std::FILE *fp) { std::fclose(fp); }
-
-  // Ref.: https://github.com/libarchive/libarchive/blob/master/examples/untar.c
-  int copy_data(struct archive *ar, struct archive *aw) {
-    int r;
-    const void *buff;
-    size_t size;
-#if ARCHIVE_VERSION_NUMBER >= 3000000
-    int64_t offset;
-#else
-    off_t offset;
+#ifndef _WIN32
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
 #endif
-
-    for (;;) {
-      r = archive_read_data_block(ar, &buff, &size, &offset);
-      if (r == ARCHIVE_EOF) return (ARCHIVE_OK);
-      if (r != ARCHIVE_OK) return (r);
-      r = archive_write_data_block(aw, buff, size, offset);
-      if (r != ARCHIVE_OK) {
-        // warn("archive_write_data_block()", archive_error_string(aw));
-        return (r);
-      }
-    }
+namespace fs=std::filesystem; using json=nlohmann::json;
+namespace {
+[[noreturn]] void die(geodepot::ErrorCode c,const std::string& m){throw geodepot::Error(c,m);}
+struct Hash { SHA256_CTX c{}; Hash(){SHA256_Init(&c);} void add(const void*p,size_t n){SHA256_Update(&c,p,n);} std::string done(){ unsigned char d[SHA256_DIGEST_LENGTH]; SHA256_Final(d,&c); static constexpr char x[]="0123456789abcdef"; std::string s(64,'0'); for(int i=0;i<32;++i){s[i*2]=x[d[i]>>4];s[i*2+1]=x[d[i]&15];} return s;} };
+struct Digest {std::string hash; uint64_t size;};
+Digest file_hash(const fs::path&p){std::ifstream f(p,std::ios::binary);if(!f)die(geodepot::ErrorCode::cache,"cannot read "+p.string());Hash h;std::array<char,65536>b{};uint64_t n=0;while(f.read(b.data(),b.size())||f.gcount()){auto k=(size_t)f.gcount();h.add(b.data(),k);n+=k;}return {h.done(),n};}
+void u64(Hash&h,uint64_t v){unsigned char b[8];for(int i=7;i>=0;--i){b[i]=v&255;v>>=8;}h.add(b,8);}
+Digest content_hash(const fs::path&p){if(fs::is_regular_file(p))return file_hash(p);if(!fs::is_directory(p))die(geodepot::ErrorCode::integrity,"data is not file or directory");std::vector<fs::path>v;for(auto&e:fs::recursive_directory_iterator(p)){if(e.is_directory())continue;if(e.is_symlink()||!e.is_regular_file())die(geodepot::ErrorCode::integrity,"directory contains link or special file");v.push_back(e.path());}std::sort(v.begin(),v.end(),[&](auto&a,auto&b){return a.lexically_relative(p).generic_string()<b.lexically_relative(p).generic_string();});Hash h;uint64_t total=0;for(auto&f:v){auto r=f.lexically_relative(p).generic_string();auto d=file_hash(f);u64(h,r.size());h.add(r.data(),r.size());u64(h,d.size);std::ifstream in(f,std::ios::binary);std::array<char,65536>b{};while(in.read(b.data(),b.size())||in.gcount())h.add(b.data(),in.gcount());total+=d.size;}return {h.done(),total};}
+bool sha(const std::string&s){return s.size()==64&&std::all_of(s.begin(),s.end(),[](unsigned char c){return c>='0'&&c<='9'||c>='a'&&c<='f';});}
+json load(const fs::path&p,geodepot::ErrorCode c){std::ifstream f(p);if(!f)die(c,"cannot read "+p.string());try{return json::parse(f);}catch(const json::exception&e){die(c,"invalid JSON: "+std::string(e.what()));}}
+std::string req(const json&j,const char*k,geodepot::ErrorCode c){if(!j.contains(k)||!j[k].is_string())die(c,std::string("missing ")+k);return j[k].get<std::string>();}
+uint64_t num(const json&j,const char*k){if(!j.contains(k)||!j[k].is_number_unsigned())die(geodepot::ErrorCode::metadata,std::string("missing ")+k);return j[k].get<uint64_t>();}
+class Lock {
+ public:
+  explicit Lock(const fs::path& p) {
+    fs::create_directories(p.parent_path());
+#ifndef _WIN32
+    fd = open(p.c_str(), O_CREAT | O_RDWR, 0600);
+    if (fd < 0 || flock(fd, LOCK_EX)) die(geodepot::ErrorCode::cache, "cannot lock cache");
+#endif
   }
-
-  // Ref.: https://github.com/libarchive/libarchive/blob/master/examples/untar.c
-  bool extract(const std::filesystem::path& tarfile, const std::filesystem::path& path_out_dir) {
-    auto filename = tarfile.c_str();
-
-    struct archive *a;
-    struct archive *ext;
-    struct archive_entry *entry;
-    int r;
-
-    a = archive_read_new();
-    ext = archive_write_disk_new();
-    /*
-     * Note: archive_write_disk_set_standard_lookup() is useful
-     * here, but it requires library routines that can add 500k or
-     * more to a static executable.
-     */
-    archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME);
-    /*
-     * On my system, enabling other archive formats adds 20k-30k
-     * each.  Enabling gzip decompression adds about 20k.
-     * Enabling bzip2 is more expensive because the libbz2 library
-     * isn't very well factored.
-     */
-    archive_read_support_format_tar(a);
-
-    if ((r = archive_read_open_filename(a, filename, 10240))) {
-      // todo: printf("archive_read_open_filename()", archive_error_string(a), r);
-    }
-
-    for (;;) {
-      r = archive_read_next_header(a, &entry);
-      if (r == ARCHIVE_EOF) break;
-      if (r != ARCHIVE_OK) {
-        // todo: fail("archive_read_next_header()", archive_error_string(a), 1);
-        return false;
-      }
-
-      const char* current_file = archive_entry_pathname(entry);
-      const auto path_out_file = path_out_dir / current_file;
-      archive_entry_set_pathname(entry, path_out_file.c_str());
-
-      r = archive_write_header(ext, entry);
-      if (r != ARCHIVE_OK) {
-        // warn("archive_write_header()", archive_error_string(ext));
-      } else {
-        copy_data(a, ext);
-        r = archive_write_finish_entry(ext);
-        if (r != ARCHIVE_OK) {
-          // todo: fail("archive_write_finish_entry()", archive_error_string(ext), 1);
-          return false;
-        }
-      }
-    }
-    archive_read_close(a);
-    archive_read_free(a);
-
-    archive_write_close(ext);
-    archive_write_free(ext);
-    return true;
+  ~Lock() {
+#ifndef _WIN32
+    if (fd >= 0) { flock(fd, LOCK_UN); close(fd); }
+#endif
   }
-
-}  // namespace
-
-namespace geodepot {
-  bool is_url(std::string_view path) {
-    return path.starts_with("http://") || path.starts_with("https://") ||
-           path.starts_with("ssh://") || path.starts_with("sftp://") ||
-           path.starts_with("ftp://");
-  }
-
-  // But consider using https://docs.libcpr.org/advanced-usage.html (Download To
-  // File) instead of vanilla curl. todo: check for path's existing, validity
-  // etc, so that it doesn't segfault
-  bool download(std::string url, std::string dest) {
-    CURL *curl;
-    FILE *fp;
-    CURLcode res;
-    char errbuf[CURL_ERROR_SIZE];
-    if (dest.length() > FILENAME_MAX) {
-      // todo: mabye error here
-    }
-    curl = curl_easy_init();
-    if (curl) {
-      fp = fopen(dest.c_str(), "wb");
-      curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
-      curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-      curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
-      errbuf[0] = 0;
-      res = curl_easy_perform(curl);
-      curl_easy_cleanup(curl);
-      fclose(fp);
-      if (res != CURLE_OK) {
-        size_t len = strlen(errbuf);
-        fprintf(stderr, "\nlibcurl: (%d) ", res);
-        if (len)
-          fprintf(stderr, "%s%s", errbuf,
-                  ((errbuf[len - 1] != '\n') ? "\n" : ""));
-        else
-          fprintf(stderr, "%s\n", curl_easy_strerror(res));
-      } else {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  CaseSpec CaseSpec::from_string(std::string casespec_string) {
-    std::string line;
-    std::vector<std::string> vec;
-    std::stringstream ss(casespec_string);
-    while (std::getline(ss, line, '/')) {
-      vec.push_back(line);
-    }
-    if (vec.size() == 1) {
-      return CaseSpec{.case_name = vec.at(0)};
-    }
-    if (vec.size() == 2) {
-      return CaseSpec{.case_name = vec.at(0), .data_name = vec.at(1)};
-    }
-    // todo: throw INVALID_CASESPEC
-    throw;
-  }
-  std::filesystem::path CaseSpec::to_path() const {
-    return this->data_name.empty()
-               ? std::filesystem::path(this->case_name)
-               : std::filesystem::path(this->case_name) / this->data_name;
-  }
-  /**
-   *  @brief Connect to an existing local repository or download one from the
-   * remote.
-   */
-  Repository::Repository(const std::string_view path) {
-    if (is_url(path)) {
-      // Create local dir structure to populate with the files from remote
-      auto path_local_repo = absolute(std::filesystem::path(".geodepot"));
-      auto path_local_cases = path_local_repo / "cases";
-      create_directories(path_local_cases);
-      auto path_remote = std::filesystem::path(path) / ".geodepot";
-      auto path_remote_index = path_remote / "index.geojson";
-      auto path_remote_config = path_remote / "config.json";
-      auto path_local_index = path_local_repo / "index.geojson";
-      auto path_local_config = path_local_repo / "config.json";
-      auto result_index =
-          download(path_remote_index.string(), path_local_index.string());
-      auto result_config =
-          download(path_remote_config.string(), path_local_config.string());
-      // todo: report error
-      path_ = path_local_repo;
-      path_cases_ = path_local_cases;
-      path_index_ = path_local_index;
-      path_config_local_ = path_local_config;
-
-      std::ifstream f(path_config_local_);
-      json config = json::parse(f);
-      // todo: error handling
-      if (config.contains("remotes")) {
-        config["remotes"]["origin"] = json::object({{ "url", path }});
-      }
-      auto config_str = config.dump();
-      {
-        std::ofstream out(path_config_local_);
-        out.write(config_str.c_str(), config_str.size());
-      }
-
-    } else {
-      auto path_absolute = absolute(std::filesystem::path(path)) / ".geodepot";
-      if (auto s = status(path_absolute); !exists(s)) {
-        // Try the parent directory
-        if (exists(path_absolute.parent_path() / ".geodepot")) {
-          path_absolute = path_absolute.parent_path() / ".geodepot";
-        }
-      }
-      path_ = path_absolute;
-      path_cases_ = path_absolute / "cases";
-      if (!exists(path_cases_)) {
-        // todo: throw MISSING_CASES
-      }
-      path_index_ = path_absolute / "index.geojson";
-      if (!exists(path_index_)) {
-        // todo: throw MISSING_INDEX
-      }
-      path_config_local_ = path_absolute / "config.json";
-      if (!exists(path_config_local_)) {
-        // todo: throw MISSING_LOCAL_CONFIG
-      }
-    }
-  }
-
-  /**
-   * @brief Check if the repository is valid.
-   * @return Boolean to indicate the validity.
-   */
-  bool Repository::is_valid() const {
-    if (!exists(this->path_)) {
-      std::cout << "repo path_ doesn't exist" << "\n";
-      return false;
-    }
-    if (!exists(this->path_cases_)) {
-      std::cout << "repo path_cases_ doesn't exist " << this->path_cases_ << "\n";
-      return false;
-    }
-    if (!exists(this->path_index_)) {
-      std::cout << "repo path_index_ doesn't exist " << this->path_index_ << "\n";
-      return false;
-    }
-    if (!exists(this->path_config_local_)) {
-      std::cout << "repo path_config_local_ doesn't exist" << this->path_config_local_ << "\n";
-      return false;
-    }
-    return true;
-  }
-
-  // todo: use option return value to indicate that the data is not in the repo
-  std::optional<std::filesystem::path> Repository::get(
-      std::string casespec) const {
-    if (!this->is_valid()) {
-      // todo: throw
-      std::cout << "invalid repo"
-                << "\n";
-      return std::nullopt;
-    }
-    auto casespec_archive = casespec + ".tar";
-    auto cs_archive = CaseSpec::from_string(std::move(casespec_archive));
-    auto path_local_archive = this->path_cases_ / cs_archive.to_path();
-    auto cs = CaseSpec::from_string(std::move(casespec));
-    auto path_local_data = this->path_cases_ / cs.to_path();
-    auto path_local_case = this->path_cases_ / cs.case_name;
-
-    // Exit early
-    if (exists(path_local_data)) return path_local_data;
-
-    if (!exists(path_local_archive)) {
-      // Create case dir first, if doesn't exist
-      std::filesystem::create_directory(path_local_case);
-      // Try downloading
-      std::string remote_url{};
-      std::ifstream f(this->path_config_local_);
-      json config = json::parse(f);
-      if (config.contains("remotes")) {
-        auto remotes = config["remotes"];
-        if (remotes.contains("origin")) {
-          remote_url = std::string(remotes["origin"]["url"]);
-        }
-      }
-      if (remote_url.empty()) {
-        // todo: throw
-        return std::nullopt;
-      }
-      auto path_remote_archive = std::filesystem::path(remote_url) /
-                                 "cases" / cs_archive.to_path();
-      auto res = download(path_remote_archive, path_local_archive);
-      // todo: check for curl results for not-found and handle it here
-      if (!res) {
-        if (!exists(path_local_archive)) {
-          // todo: throw
-        }
-      }
-    }
-    if (exists(path_local_archive)) {
-      extract(path_local_archive, path_local_case);
-      if (exists(path_local_data)) return path_local_data;
-    }
-
-    return std::nullopt;
-  }
-  std::filesystem::path Repository::get_repository_path() const {
-    return this->path_;
-  }
-}  // namespace geodepot
+ private:
+#ifndef _WIN32
+  int fd = -1;
+#endif
+};
+size_t write(char*b,size_t s,size_t n,void*u){return fwrite(b,s,n,(FILE*)u);}
+void fetch(const std::string&url,const fs::path&dest,bool offline,const std::string*expected=nullptr,uint64_t size=0){if(offline){if(!fs::exists(dest))die(geodepot::ErrorCode::network,"offline cache miss");}else{bool ok=false;for(int i=0;i<3&&!ok;++i){auto tmp=dest.string()+".part";FILE*out=fopen(tmp.c_str(),"wb");if(!out)die(geodepot::ErrorCode::cache,"cannot create cache file");CURL*c=curl_easy_init();curl_easy_setopt(c,CURLOPT_URL,url.c_str());curl_easy_setopt(c,CURLOPT_WRITEFUNCTION,write);curl_easy_setopt(c,CURLOPT_WRITEDATA,out);curl_easy_setopt(c,CURLOPT_FOLLOWLOCATION,1L);curl_easy_setopt(c,CURLOPT_MAXREDIRS,5L);curl_easy_setopt(c,CURLOPT_CONNECTTIMEOUT,10L);curl_easy_setopt(c,CURLOPT_LOW_SPEED_LIMIT,1024L);curl_easy_setopt(c,CURLOPT_LOW_SPEED_TIME,30L);curl_easy_setopt(c,CURLOPT_PROTOCOLS_STR,"http,https");curl_easy_setopt(c,CURLOPT_REDIR_PROTOCOLS_STR,"http,https");auto r=curl_easy_perform(c);long status=0;curl_easy_getinfo(c,CURLINFO_RESPONSE_CODE,&status);curl_easy_cleanup(c);fclose(out);if(r==CURLE_OK&&status>=200&&status<300){fs::rename(tmp,dest);ok=true;}else{fs::remove(tmp);if(status==404)die(geodepot::ErrorCode::missing,"HTTP 404");if(!(r!=CURLE_OK||status==408||status==429||status>=500))die(geodepot::ErrorCode::network,"HTTP "+std::to_string(status));}}if(!ok)die(geodepot::ErrorCode::network,"download failed");}auto d=file_hash(dest);if((expected&&d.hash!=*expected)||(size&&d.size!=size)){fs::remove(dest);die(geodepot::ErrorCode::integrity,"download integrity failure");}}
+struct Art{std::string c,d,h,ah;uint64_t n,an;};
+void extract(const fs::path&tar,const fs::path&tmp,const Art&a){archive*ar=archive_read_new();archive_read_support_format_tar(ar);if(archive_read_open_filename(ar,tar.c_str(),10240)!=ARCHIVE_OK)die(geodepot::ErrorCode::integrity,"invalid archive");archive_entry*e;uint64_t expanded=0;while(archive_read_next_header(ar,&e)==ARCHIVE_OK){std::string name=archive_entry_pathname(e);fs::path rel(name);if(name.empty()||rel.is_absolute()||name.find('\\')!=std::string::npos||std::any_of(rel.begin(),rel.end(),[](auto&p){return p=="..";})||rel.begin()->string()!=a.d||archive_entry_symlink(e)||archive_entry_hardlink(e)||(archive_entry_filetype(e)!=AE_IFREG&&archive_entry_filetype(e)!=AE_IFDIR))die(geodepot::ErrorCode::integrity,"unsafe archive entry");if(archive_entry_filetype(e)==AE_IFDIR){fs::create_directories(tmp/rel);continue;}if((uint64_t)archive_entry_size(e)>a.n-expanded)die(geodepot::ErrorCode::integrity,"archive expansion exceeds data size");fs::create_directories((tmp/rel).parent_path());std::ofstream o(tmp/rel,std::ios::binary);std::array<char,65536>b{};la_ssize_t k;while((k=archive_read_data(ar,b.data(),b.size()))>0){o.write(b.data(),k);expanded+=k;}if(k<0||!o)die(geodepot::ErrorCode::integrity,"archive extraction failed");}archive_read_free(ar);}
+}
+namespace geodepot { fs::path prepare(const PrepareOptions&o){if(!fs::is_regular_file(o.lock_file)||o.cache_root.empty()||o.suite.empty())die(ErrorCode::cli,"invalid prepare options");auto l=load(o.lock_file,ErrorCode::cli);auto remote=req(l,"remote",ErrorCode::cli);while(remote.ends_with('/'))remote.pop_back();if(!remote.starts_with("http://")&&!remote.starts_with("https://"))die(ErrorCode::cli,"remote must be HTTP(S)");auto ih=req(l,"index_sha256",ErrorCode::cli);if(!sha(ih))die(ErrorCode::cli,"invalid index digest");Hash kh;kh.add(remote.data(),remote.size());auto base=fs::absolute(o.cache_root)/kh.done()/ih;fs::create_directories(base);Lock master(base/"prepare.lock");auto relp=base/"release.json",idxp=base/"index.geojson";fetch(remote+"/release.json",relp,o.offline);fetch(remote+"/.geodepot/index.geojson",idxp,o.offline,&ih);auto rel=load(relp,ErrorCode::metadata);if(req(rel,"version",ErrorCode::metadata)!=req(l,"version",ErrorCode::cli)||req(rel,"index_sha256",ErrorCode::metadata)!=ih||req(rel,"status",ErrorCode::metadata)!="complete")die(ErrorCode::metadata,"release does not match lock");if(!rel.contains("suites")||!rel["suites"].contains(o.suite))die(ErrorCode::missing,"suite not found");auto list=rel["suites"][o.suite];if(list.is_object()&&list.contains("casespecs"))list=list["casespecs"];if(!list.is_array())die(ErrorCode::metadata,"invalid suite");std::map<std::string,Art>arts;auto idx=load(idxp,ErrorCode::metadata);if(!idx.contains("features")||!idx["features"].is_array())die(ErrorCode::metadata,"invalid index");for(auto&f:idx["features"]){if(!f.contains("properties")||!f["properties"].is_object())die(ErrorCode::metadata,"invalid index feature");auto&p=f["properties"];auto c=req(p,"case_name",ErrorCode::metadata);auto d=req(p,"data_name",ErrorCode::metadata);Art a{c,d,req(p,"data_sha256",ErrorCode::metadata),req(p,"archive_sha256",ErrorCode::metadata),num(p,"data_size"),num(p,"archive_size")};if(!sha(a.h)||!sha(a.ah))die(ErrorCode::metadata,"invalid index digest");arts[c+"/"+d]=a;}for(auto&m:list){std::string key=m.is_string()?m.get<std::string>():req(m,"casespec",ErrorCode::metadata);if(!arts.contains(key))die(ErrorCode::metadata,"suite entry absent from index");auto&a=arts.at(key);auto final=base/"root"/a.c/a.d;Lock al(base/"locks"/(a.c+"--"+a.d+".lock"));if(fs::exists(final)){auto d=content_hash(final);if(d.hash==a.h&&d.size==a.n)continue;fs::remove_all(final);}auto tar=base/"archives"/a.c/(a.d+".tar");fs::create_directories(tar.parent_path());fetch(remote+"/.geodepot/cases/"+a.c+"/"+a.d+".tar",tar,o.offline,&a.ah,a.an);auto tmp=base/"tmp";fs::remove_all(tmp);fs::create_directories(tmp);extract(tar,tmp,a);auto d=content_hash(tmp/a.d);if(d.hash!=a.h||d.size!=a.n)die(ErrorCode::integrity,"content integrity failure");fs::create_directories(final.parent_path());fs::rename(tmp/a.d,final);fs::remove_all(tmp);}return fs::absolute(base/"root");} }

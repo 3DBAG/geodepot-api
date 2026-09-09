@@ -1,12 +1,17 @@
-cmake_minimum_required(VERSION 3.19...3.29)
-project(geodepot-integration-tests)
+find_package(Python3 3.12 COMPONENTS Interpreter REQUIRED)
 
-include(FetchContent)
-FetchContent_Declare(
-  geodepot-api
-  GIT_REPOSITORY https://github.com/3DBAG/geodepot-api.git
-)
-FetchContent_MakeAvailable(geodepot-api)
+add_executable(geodepot-api-probe test_integration.cpp)
+target_link_libraries(geodepot-api-probe PRIVATE geodepot)
 
-add_executable("test_integration" "test_integration.cpp")
-target_link_libraries("test_integration" geodepot)
+add_test(
+  NAME geodepot-remote-integration
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_remote.py"
+          --get "$<TARGET_FILE:geodepot-get>"
+          --probe "$<TARGET_FILE:geodepot-api-probe>"
+          --source-root "${CMAKE_SOURCE_DIR}")
+set_tests_properties(geodepot-remote-integration PROPERTIES LABELS integration TIMEOUT 600)
+
+add_custom_target(test-integration
+  COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -L integration
+  DEPENDS geodepot-get geodepot-api-probe
+  USES_TERMINAL)
