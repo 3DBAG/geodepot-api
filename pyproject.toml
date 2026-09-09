@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core==0.10.5", "nanobind==2.2.0"]
+requires = ["scikit-build-core", "nanobind"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -22,6 +22,8 @@ dev = ["ruff", "pytest"]
 package = ["cibuildwheel", "twine", "uv", "build"]
 
 [tool.scikit-build]
+sdist.exclude = [".github", "geodepot-cmake", "geodepot-rs", "apps", "tests"]
+wheel.exclude = [".github", "geodepot-cmake", "geodepot-rs", "apps", "tests"]
 wheel.expand-macos-universal-tags = true
 wheel.packages = ["geodepot-py/src/geodepot_api"]
 build.verbose = true
@@ -51,11 +53,13 @@ build-frontend = "build[uv]"
 test-command = "pytest geodepot-py/tests"
 test-extras = ["dev"]
 archs = ["auto64"]
+skip = ["pp*"] # Skip PyPy
 
 [tool.cibuildwheel.linux]
 before-build = [
     "yum install -y cmake libcurl openssl-devel",
 ]
+repair-wheel-command = "auditwheel repair --exclude nanobind -w {dest_dir} {wheel}"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
@@ -64,14 +68,15 @@ before-build = [
 ]
 
 [tool.cibuildwheel.macos]
-environment = { MACOSX_DEPLOYMENT_TARGET="10.9" }
+# Needed for full C++17 support on macOS
+environment = { MACOSX_DEPLOYMENT_TARGET="10.14" }
 before-build = [
     "brew install coreutils cmake curlpp openssl",
 ]
 
 [tool.cibuildwheel.windows]
 before-build = [
-    "chocolatey install libcurl",
+    "chocolatey install libcurl openssl",
 ]
 
 [tool.ruff]

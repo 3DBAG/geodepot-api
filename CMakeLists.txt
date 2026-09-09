@@ -6,13 +6,13 @@ option(GD_BUILD_APPS "Build applications in addition to library" ON)
 option(GD_BUILD_TESTING "Enable tests for geodepot" OFF)
 option(GD_BUILD_BINDINGS "Build python bindings with pybind" ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared as opposed to static" ON)
-# Set variables for building the bindings
-if(GD_BUILD_BINDINGS)
-  message(
-    STATUS
-      "Configuring static library for Geodepot because GD_BUILD_BINDINGS is ON")
-  set(BUILD_SHARED_LIBS OFF)
-endif()
+## Set variables for building the bindings
+#if(GD_BUILD_BINDINGS)
+#  message(
+#    STATUS
+#      "Configuring static library for Geodepot because GD_BUILD_BINDINGS is ON")
+#  set(BUILD_SHARED_LIBS OFF)
+#endif()
 if(NOT BUILD_SHARED_LIBS)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
@@ -57,7 +57,7 @@ if(NOT LibArchive_FOUND)
     libarchive/libarchive
     OPTIONS
     "ENABLE_TAR ON"
-    "ENABLE_TAR_SHARED OFF"
+    "ENABLE_TAR_SHARED ON"
     "ENABLE_TEST OFF"
     "ENABLE_CPIO OFF"
     "ENABLE_XATTR OFF"
